@@ -44,8 +44,7 @@
     <script>
         const API_URL = 'https://clipboard-sync-mocha.vercel.app';
         const DEVICE_ID = 'web-' + Math.random().toString(36).substr(2, 9);
-        let messages = [];
-        let lastTimestamp = 0;
+        let loadedIds = new Set();
         
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => {
@@ -73,7 +72,7 @@
                 });
                 
                 input.value = '';
-                refresh();
+                setTimeout(refresh, 500);
             } catch (err) {
                 console.error(err);
             }
@@ -84,15 +83,14 @@
                 const res = await fetch(`${API_URL}/api/clipboard`);
                 const data = await res.json();
                 
-                if (!data || !data.content || data.timestamp === lastTimestamp) return;
-                
-                lastTimestamp = data.timestamp;
-                messages.push(data);
+                if (!data.messages || data.messages.length === 0) return;
                 
                 const container = document.getElementById('messages');
-                container.innerHTML = '';
                 
-                messages.forEach(msg => {
+                data.messages.forEach(msg => {
+                    if (loadedIds.has(msg.id)) return;
+                    loadedIds.add(msg.id);
+                    
                     const div = document.createElement('div');
                     div.className = 'message ' + (msg.deviceId === DEVICE_ID ? 'sent' : 'received');
                     div.onclick = () => copyToClipboard(msg.content);
@@ -102,6 +100,10 @@
                         <div>${msg.content}</div>
                         <div class="message-info">${msg.deviceId} • ${time}</div>
                     `;
+                    
+                    if (container.querySelector('.empty')) {
+                        container.innerHTML = '';
+                    }
                     
                     container.appendChild(div);
                 });
