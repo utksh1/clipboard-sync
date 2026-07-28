@@ -1,6 +1,6 @@
 # Clipboard Sync
 
-Cross-device clipboard synchronization using Vercel backend.
+Cross-device clipboard synchronization using Vercel backend - **completely free!**
 
 ## Features
 
@@ -8,48 +8,21 @@ Cross-device clipboard synchronization using Vercel backend.
 - Supports text, images, and files
 - ~1-2 second sync latency
 - No authentication (personal use)
+- **100% free** - uses in-memory storage on Vercel
 
-## Setup
+## Quick Start
 
-### Backend Deployment
+### 1. Client Setup
 
-1. Deploy to Vercel:
-```bash
-cd backend
-vercel deploy --prod
-```
-
-2. Setup Vercel KV:
-   - Go to Vercel dashboard → Storage tab
-   - Create new KV database (or connect Upstash Redis)
-   - Connect to your project
-
-3. Note your deployment URL (e.g., `https://clipboard-sync-xyz.vercel.app`)
-
-### Client Setup
-
-1. Install dependencies:
 ```bash
 cd client
 npm install
-```
-
-2. Update `config.json` with your backend URL:
-```json
-{
-  "apiUrl": "https://your-deployment.vercel.app",
-  "deviceId": ""
-}
-```
-
-3. Run the client:
-```bash
 node client.js
 ```
 
-The `deviceId` will be auto-generated on first run.
+The client will auto-generate a device ID on first run and connect to the deployed backend at `https://clipboard-sync-mocha.vercel.app`.
 
-### Platform Requirements
+### 2. Platform Requirements
 
 - **Mac**: No additional requirements
 - **Windows**: PowerShell 5.0+
@@ -61,19 +34,38 @@ The `deviceId` will be auto-generated on first run.
 2. Copy text/images/files on any device
 3. Content automatically appears on all other devices within 1-2 seconds
 
-## Architecture
+## How It Works
 
-- **Backend**: Vercel serverless functions with KV storage and Blob storage
+- **Backend**: Vercel serverless functions with in-memory storage (free tier)
 - **Client**: Node.js script monitoring clipboard changes
 - **Sync**: Polling-based (500ms monitor, 1s sync interval)
 
+## Deploy Your Own Backend
+
+If you want to deploy your own backend:
+
+```bash
+vercel deploy --prod
+```
+
+Then update `client/config.json` with your deployment URL.
+
 ## Limitations
 
+- In-memory storage resets on backend redeployment (data not persistent)
 - 1-2 second sync latency (polling-based)
 - 500MB file size limit (Vercel Blob free tier)
 - No clipboard history (only latest)
 - Requires internet connection
-- No end-to-end encryption
+
+## Architecture
+
+```
+┌─────────────┐         ┌──────────────────┐         ┌─────────────┐
+│   Device 1  │────────▶│  Vercel Backend  │◀────────│   Device 2  │
+│   (Client)  │         │  (In-memory DB)  │         │   (Client)  │
+└─────────────┘         └──────────────────┘         └─────────────┘
+```
 
 ## License
 
