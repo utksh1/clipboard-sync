@@ -67,7 +67,7 @@ async function monitorClipboard() {
 }
 
 async function syncClipboard() {
-  const response = await fetch(`${API_URL}/api/clipboard/latest`);
+  const response = await fetch(`${API_URL}/api/clipboard`);
   const data = await response.json();
   
   if (!data || !data.timestamp) return;
