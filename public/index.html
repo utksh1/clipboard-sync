@@ -11,12 +11,16 @@
         h1 { margin-bottom: 20px; font-size: 24px; }
         .clipboard-box { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
         .status { color: #888; font-size: 14px; margin-bottom: 10px; }
-        .content { background: #0a0a0a; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-break: break-all; }
+        textarea { width: 100%; min-height: 200px; background: #0a0a0a; color: #fff; border: 1px solid #333; border-radius: 4px; padding: 15px; font-family: monospace; font-size: 14px; resize: vertical; }
+        textarea:focus { outline: none; border-color: #2563eb; }
         .empty { color: #666; font-style: italic; }
         .meta { display: flex; gap: 20px; margin-top: 10px; font-size: 12px; color: #666; }
         img { max-width: 100%; border-radius: 4px; margin-top: 10px; }
-        button { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .buttons { display: flex; gap: 10px; margin-top: 10px; }
+        button { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; }
         button:hover { background: #1d4ed8; }
+        button.secondary { background: #374151; }
+        button.secondary:hover { background: #4b5563; }
     </style>
 </head>
 <body>
@@ -24,18 +28,52 @@
         <h1>📋 Clipboard Sync</h1>
         
         <div class="clipboard-box">
-            <div class="status" id="status">Connecting...</div>
-            <div class="content" id="content">
-                <div class="empty">No clipboard data yet</div>
+            <div class="status" id="status">Ready</div>
+            <textarea id="textarea" placeholder="Paste or type here, then click Send to sync to all devices..."></textarea>
+            <div class="buttons">
+                <button onclick="send()">📤 Send to All Devices</button>
+                <button class="secondary" onclick="refresh()">🔄 Refresh</button>
             </div>
             <div class="meta" id="meta"></div>
         </div>
-        
-        <button onclick="refresh()">🔄 Refresh</button>
     </div>
 
     <script>
         const API_URL = 'https://clipboard-sync-mocha.vercel.app';
+        
+        async function send() {
+            const text = document.getElementById('textarea').value;
+            if (!text) {
+                alert('Please enter some text first!');
+                return;
+            }
+            
+            try {
+                document.getElementById('status').textContent = 'Sending...';
+                
+                const res = await fetch(`${API_URL}/api/clipboard`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'text',
+                        content: text,
+                        deviceId: 'web-browser',
+                        timestamp: Date.now()
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    document.getElementById('status').textContent = '✅ Sent! Available on all devices now.';
+                    setTimeout(() => refresh(), 1000);
+                } else {
+                    document.getElementById('status').textContent = '❌ Failed to send';
+                }
+            } catch (err) {
+                document.getElementById('status').textContent = '❌ Error: ' + err.message;
+            }
+        }
         
         async function refresh() {
             try {
@@ -44,23 +82,19 @@
                 const data = await res.json();
                 
                 if (!data || !data.content) {
-                    document.getElementById('content').innerHTML = '<div class="empty">No clipboard data yet</div>';
+                    document.getElementById('textarea').value = '';
                     document.getElementById('meta').innerHTML = '';
-                    document.getElementById('status').textContent = 'No data';
+                    document.getElementById('status').textContent = 'No clipboard data yet';
                     return;
                 }
                 
-                const contentEl = document.getElementById('content');
-                
                 if (data.type === 'text') {
-                    contentEl.textContent = data.content;
-                } else if (data.type === 'image' || data.type === 'file') {
-                    contentEl.innerHTML = `<img src="${data.content}" alt="Clipboard content">`;
+                    document.getElementById('textarea').value = data.content;
                 }
                 
                 const time = new Date(data.timestamp).toLocaleString();
                 document.getElementById('meta').innerHTML = `
-                    <span>Device: ${data.deviceId}</span>
+                    <span>From: ${data.deviceId}</span>
                     <span>Type: ${data.type}</span>
                     <span>Time: ${time}</span>
                 `;
@@ -72,7 +106,7 @@
         }
         
         refresh();
-        setInterval(refresh, 2000);
+        setInterval(refresh, 3000);
     </script>
 </body>
 </html>
